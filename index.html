@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
@@ -314,6 +314,21 @@
     .type-mini.tm-going   { opacity: 1; }
     .type-mini.tm-wait    { opacity: .6; }
 
+    /* Audit column badge */
+    .audit-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 500;
+    }
+    .audit-badge.audit-done  { background: rgba(63,185,80,.12);  color: var(--green);  border: 1px solid rgba(63,185,80,.25); }
+    .audit-badge.audit-going { background: rgba(88,166,255,.12); color: var(--blue);   border: 1px solid rgba(88,166,255,.25); }
+    .audit-badge.audit-none  { background: rgba(139,148,158,.08); color: var(--muted); border: 1px solid rgba(139,148,158,.2); }
+    .audit-acc { font-size: 12px; font-weight: 600; }
+    .audit-acc.acc-good { color: var(--green); }
+    .audit-acc.acc-mid  { color: var(--yellow); }
+    .audit-acc.acc-bad  { color: var(--red); }
+    .audit-date { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
     /* Responsive */
     @media (max-width: 1100px) {
       .summary-row { grid-template-columns: repeat(3, 1fr); }
@@ -334,7 +349,7 @@
     <div class="header-icon">📦</div>
     <div>
       <div class="header-title">东莞门店盘点完成情况</div>
-      <div class="header-sub">实时监控看板 · 数据来源：盘点单导出.xlsx（2026-04-25）</div>
+      <div class="header-sub">实时监控看板 · 数据来源：盘点单导出.xlsx（2026-05-04）</div>
     </div>
   </div>
   <div class="header-right">
@@ -409,6 +424,7 @@
             <th>进行中</th>
             <th>待盘点</th>
             <th id="typeColHeader">各类型完成情况</th>
+            <th>稽核盘点</th>
           </tr>
         </thead>
         <tbody id="storeTableBody"></tbody>
@@ -495,6 +511,299 @@
 <script>
 // ── Real Data (from 东莞门店.xlsx + 盘点单导出.xlsx, 2026-04-25) ──────────
 // 门店名单来源：东莞门店.xlsx（47家，含区域）
+
+// ── 稽核盘点数据（由自动化脚本每日更新）──────────────────────────────────
+// 格式：{ "门店全名": { orderNo, statusDesc, comprehensiveAccuracyRate, createTime } }
+const auditData = {
+  "歪马送酒（金升店）": {
+    "orderNo": "JHPD-20260501-01071",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:05"
+  },
+  "歪马送酒（长安沙头店）": {
+    "orderNo": "JHPD-20260501-01057",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:05"
+  },
+  "歪马送酒（赤岭店）": {
+    "orderNo": "JHPD-20260501-01048",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:05"
+  },
+  "歪马送酒（石碣店）": {
+    "orderNo": "JHPD-20260501-01042",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:05"
+  },
+  "歪马送酒（长安上角店）": {
+    "orderNo": "JHPD-20260501-00974",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:04"
+  },
+  "歪马送酒（牛山公园店）": {
+    "orderNo": "JHPD-20260501-00866",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:04"
+  },
+  "歪马送酒（常平金美店）": {
+    "orderNo": "JHPD-20260501-00858",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:04"
+  },
+  "歪马送酒（温塘店）": {
+    "orderNo": "JHPD-20260501-00857",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:04"
+  },
+  "歪马送酒（塘厦诸佛岭店）": {
+    "orderNo": "JHPD-20260501-00727",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（寮步横坑店）": {
+    "orderNo": "JHPD-20260501-00711",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（虎门公园店）": {
+    "orderNo": "JHPD-20260501-00670",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（塘厦黎屋店）": {
+    "orderNo": "JHPD-20260501-00650",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（虎门中学店）": {
+    "orderNo": "JHPD-20260501-00645",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（清溪店）": {
+    "orderNo": "JHPD-20260501-00636",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（松山湖店）": {
+    "orderNo": "JHPD-20260501-00632",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:03"
+  },
+  "歪马送酒（润丰国际店）": {
+    "orderNo": "JHPD-20260501-00521",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（寮步香市店）": {
+    "orderNo": "JHPD-20260501-00512",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（虎门万达店）": {
+    "orderNo": "JHPD-20260501-00508",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（樟木头店）": {
+    "orderNo": "JHPD-20260501-00502",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（塘厦田心店）": {
+    "orderNo": "JHPD-20260501-00462",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（黄江公园店）": {
+    "orderNo": "JHPD-20260501-00441",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（松木山店）": {
+    "orderNo": "JHPD-20260501-00439",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（月荷湖店）": {
+    "orderNo": "JHPD-20260501-00393",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（大岭山冚村店）": {
+    "orderNo": "JHPD-20260501-00366",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（常平朗贝店）": {
+    "orderNo": "JHPD-20260501-00300",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（清溪谢坑店）": {
+    "orderNo": "JHPD-20260501-00297",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:02"
+  },
+  "歪马送酒（桥头广场店）": {
+    "orderNo": "JHPD-20260501-00257",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（金鸿店）": {
+    "orderNo": "JHPD-20260501-00252",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（百果洞店）": {
+    "orderNo": "JHPD-20260501-00246",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（厚街寮厦店）": {
+    "orderNo": "JHPD-20260501-00236",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（虎门宴岗店）": {
+    "orderNo": "JHPD-20260501-00224",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（凤岗沙岭店）": {
+    "orderNo": "JHPD-20260501-00221",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（石排店）": {
+    "orderNo": "JHPD-20260501-00218",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（黎贝岭店）": {
+    "orderNo": "JHPD-20260501-00217",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（南城店）": {
+    "orderNo": "JHPD-20260501-00215",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（高埗店）": {
+    "orderNo": "JHPD-20260501-00210",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（理工学院店）": {
+    "orderNo": "JHPD-20260501-00172",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（大岭山新塘店）": {
+    "orderNo": "JHPD-20260501-00167",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（塘厦中学店）": {
+    "orderNo": "JHPD-20260501-00166",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（茶山店）": {
+    "orderNo": "JHPD-20260501-00162",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（东城店）": {
+    "orderNo": "JHPD-20260501-00138",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（长安霄边店）": {
+    "orderNo": "JHPD-20260501-00135",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（东城兴塘店）": {
+    "orderNo": "JHPD-20260501-00129",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（东坑店）": {
+    "orderNo": "JHPD-20260501-00120",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（凤岗下围店）": {
+    "orderNo": "JHPD-20260501-00110",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（厚街沙塘店）": {
+    "orderNo": "JHPD-20260501-00107",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（横沥店）": {
+    "orderNo": "JHPD-20260501-00054",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  },
+  "歪马送酒（华生店）": {
+    "orderNo": "JHPD-20260501-00055",
+    "statusDesc": "待领取",
+    "comprehensiveAccuracyRate": null,
+    "createTime": "2026-05-01 14:00:01"
+  }
+};
 // 盘点数据来源：盘点单导出.xlsx
 
 function storeStatus(sc) {
@@ -505,56 +814,56 @@ function storeStatus(sc) {
 
 // [fullName, area, {status_counts, plan_sku, done_sku, total_tasks, type_counts}]
 // type_counts: short=短保盘, weekly=周盘, monthly=月度盲盘, other=其他
-// 数据更新时间：2026-04-30
+// 数据更新时间：2026-05-04
 const rawData = [
   ["歪马送酒（东坑店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（东城兴塘店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（东城店）", "东莞二区", {"status_counts": {"待盘点": 1, "盘点中": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"盘点中": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}}}],
+  ["歪马送酒（东城店）", "东莞二区", {"status_counts": {"审核中": 1}, "plan_sku": 11, "done_sku": 11, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"审核中": 1}, "plan_sku": 11, "done_sku": 11, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（凤岗下围店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（凤岗沙岭店）", "东莞三区", {"status_counts": {"待提交": 1}, "plan_sku": 35, "done_sku": 35, "total_tasks": 1, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待提交": 1}, "plan_sku": 35, "done_sku": 35, "total_tasks": 1}}}],
+  ["歪马送酒（凤岗沙岭店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（华生店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（南城店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（厚街寮厦店）", "东莞一区", {"status_counts": {"已完成": 2}, "plan_sku": 45, "done_sku": 45, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 10, "done_sku": 10, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"已完成": 1}, "plan_sku": 35, "done_sku": 35, "total_tasks": 1}}}],
+  ["歪马送酒（厚街寮厦店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（厚街沙塘店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（塘厦中学店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（塘厦田心店）", "东莞三区", {"status_counts": {"待盘点": 2}, "plan_sku": 0, "done_sku": 0, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}}}],
+  ["歪马送酒（塘厦田心店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（塘厦诸佛岭店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（塘厦黎屋店）", "东莞三区", {"status_counts": {"已失效": 6}, "plan_sku": 0, "done_sku": 0, "total_tasks": 6, "type_counts": {"short": {"status_counts": {"已失效": 3}, "plan_sku": 0, "done_sku": 0, "total_tasks": 3}, "weekly": {"status_counts": {"已失效": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"已失效": 2}, "plan_sku": 0, "done_sku": 0, "total_tasks": 2}}}],
-  ["歪马送酒（大岭山冚村店）", "东莞一区", {"status_counts": {"待盘点": 2}, "plan_sku": 0, "done_sku": 0, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}}}],
-  ["歪马送酒（大岭山新塘店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（寮步横坑店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（塘厦黎屋店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（大岭山冚村店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（大岭山新塘店）", "东莞一区", {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（寮步横坑店）", "东莞二区", {"status_counts": {"待盘点": 6, "已失效": 1, "已完成": 1}, "plan_sku": 3, "done_sku": 3, "total_tasks": 8, "type_counts": {"short": {"status_counts": {"已失效": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 6, "已完成": 1}, "plan_sku": 3, "done_sku": 3, "total_tasks": 7}}}],
   ["歪马送酒（寮步香市店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（常平朗贝店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（常平金美店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（月荷湖店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（松山湖店）", "东莞一区", {"status_counts": {"已完成": 3}, "plan_sku": 65, "done_sku": 65, "total_tasks": 3, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 11, "done_sku": 11, "total_tasks": 1}, "weekly": {"status_counts": {"已完成": 1}, "plan_sku": 25, "done_sku": 25, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"已完成": 1}, "plan_sku": 29, "done_sku": 29, "total_tasks": 1}}}],
+  ["歪马送酒（松山湖店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（松木山店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（桥头广场店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（樟木头店）", "东莞三区", {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（樟木头店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（横沥店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（润丰国际店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（清溪店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（清溪谢坑店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（清溪谢坑店）", "东莞三区", {"status_counts": {"已完成": 1}, "plan_sku": 12, "done_sku": 12, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 12, "done_sku": 12, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（温塘店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（牛山公园店）", "东莞一区", {"status_counts": {"已完成": 1}, "plan_sku": 23, "done_sku": 23, "total_tasks": 1, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {"已完成": 1}, "plan_sku": 23, "done_sku": 23, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（牛山公园店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（理工学院店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（百果洞店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（石排店）", "东莞二区", {"status_counts": {"待盘点": 1, "已完成": 4}, "plan_sku": 96, "done_sku": 96, "total_tasks": 5, "type_counts": {"short": {"status_counts": {"待盘点": 1, "已完成": 2}, "plan_sku": 24, "done_sku": 24, "total_tasks": 3}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"已完成": 2}, "plan_sku": 72, "done_sku": 72, "total_tasks": 2}}}],
-  ["歪马送酒（石碣店）", "东莞二区", {"status_counts": {"待盘点": 2, "审核中": 1}, "plan_sku": 20, "done_sku": 20, "total_tasks": 3, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {"审核中": 1}, "plan_sku": 20, "done_sku": 20, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}}}],
-  ["歪马送酒（茶山店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（石排店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（石碣店）", "东莞二区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（茶山店）", "东莞二区", {"status_counts": {"已完成": 1}, "plan_sku": 12, "done_sku": 12, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 12, "done_sku": 12, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（虎门万达店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（虎门中学店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
   ["歪马送酒（虎门公园店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（虎门宴岗店）", "东莞一区", {"status_counts": {"盘点中": 1, "已完成": 2}, "plan_sku": 22, "done_sku": 22, "total_tasks": 3, "type_counts": {"short": {"status_counts": {"已完成": 2}, "plan_sku": 22, "done_sku": 22, "total_tasks": 2}, "weekly": {"status_counts": {"盘点中": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（虎门宴岗店）", "东莞一区", {"status_counts": {"待盘点": 1, "盘点中": 2}, "plan_sku": 0, "done_sku": 0, "total_tasks": 3, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 1, "盘点中": 2}, "plan_sku": 0, "done_sku": 0, "total_tasks": 3}}}],
   ["歪马送酒（赤岭店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（金升店）", "东莞二区", {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（金鸿店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（长安上角店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（金升店）", "东莞二区", {"status_counts": {"待提交": 2}, "plan_sku": 46, "done_sku": 46, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"待提交": 1}, "plan_sku": 12, "done_sku": 12, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待提交": 1}, "plan_sku": 34, "done_sku": 34, "total_tasks": 1}}}],
+  ["歪马送酒（金鸿店）", "东莞三区", {"status_counts": {"已完成": 1}, "plan_sku": 11, "done_sku": 11, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 11, "done_sku": 11, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（长安上角店）", "东莞一区", {"status_counts": {"审核中": 2}, "plan_sku": 47, "done_sku": 47, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"审核中": 1}, "plan_sku": 11, "done_sku": 11, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"审核中": 1}, "plan_sku": 36, "done_sku": 36, "total_tasks": 1}}}],
   ["歪马送酒（长安沙头店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（长安霄边店）", "东莞一区", {"status_counts": {"已完成": 2}, "plan_sku": 43, "done_sku": 43, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 10, "done_sku": 10, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"已完成": 1}, "plan_sku": 33, "done_sku": 33, "total_tasks": 1}}}],
-  ["歪马送酒（高埗店）", "东莞二区", {"status_counts": {"已完成": 2}, "plan_sku": 34, "done_sku": 34, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"已完成": 1}, "plan_sku": 12, "done_sku": 12, "total_tasks": 1}, "weekly": {"status_counts": {"已完成": 1}, "plan_sku": 22, "done_sku": 22, "total_tasks": 1}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（长安霄边店）", "东莞一区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
+  ["歪马送酒（高埗店）", "东莞二区", {"status_counts": {"待盘点": 2}, "plan_sku": 0, "done_sku": 0, "total_tasks": 2, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}}}],
   ["歪马送酒（黄江公园店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}],
-  ["歪马送酒（黎贝岭店）", "东莞三区", {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1, "type_counts": {"short": {"status_counts": {"待盘点": 1}, "plan_sku": 0, "done_sku": 0, "total_tasks": 1}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}]
+  ["歪马送酒（黎贝岭店）", "东莞三区", {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0, "type_counts": {"short": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "weekly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "monthly": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}, "other": {"status_counts": {}, "plan_sku": 0, "done_sku": 0, "total_tasks": 0}}}]
 ];
 
 // 构建 stores 数组
@@ -607,6 +916,22 @@ stores.filter(s => s.goingTasks > 0).slice(0, 3).forEach(s => {
 stores.filter(s => s.status === 'done').slice(0, 3).forEach(s => {
   alerts.push({ icon:'✅', text:`${s.name} 所有盘点单已完成`, time:'今日' });
 });
+
+// ── Audit column helper ──────────────────────────────────────────────────
+function auditCell(fullName) {
+  const d = auditData[fullName];
+  if (!d) return '<span class="audit-badge audit-none">暂无稽核</span>';
+  const acc = d.comprehensiveAccuracyRate;
+  const accCls = acc >= 98 ? 'acc-good' : acc >= 95 ? 'acc-mid' : 'acc-bad';
+  const statusDone = d.statusDesc === '稽核完成';
+  const badgeCls = statusDone ? 'audit-done' : 'audit-going';
+  const date = d.createTime ? d.createTime.substring(0, 10) : '';
+  return `<div>
+    <span class="audit-badge ${badgeCls}">${d.statusDesc}</span>
+    <div class="audit-acc ${accCls}" style="margin-top:3px">${acc != null ? acc.toFixed(2) + '%' : '—'}</div>
+    <div class="audit-date">${date}</div>
+  </div>`;
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function pct(done, total) {
@@ -750,6 +1075,7 @@ function renderTable() {
       <td style="text-align:center">${dispGoingTasks > 0 ? `<span style="color:var(--blue)">${dispGoingTasks}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td style="text-align:center">${dispWaitTasks > 0 ? `<span style="color:var(--yellow)">${dispWaitTasks}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:12px">${typeColCell(s)}</td>
+      <td style="font-size:12px">${auditCell(s.fullName)}</td>
     </tr>`;
   }).join('');
 }
